@@ -8,9 +8,9 @@ export const mongoConfig = async (
 ): Promise<MongooseModuleFactoryOptions> => {
   const logger = new Logger('MongoDB');
   const uri = configService.get<string>('MONGODB_URI');
-
   const setupMongoEventListeners = () => {
     mongoose.connection.on('connected', () => {
+      console.log(28);
       logger.log('MongoDB connected successfully');
     });
 
