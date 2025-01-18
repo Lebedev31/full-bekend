@@ -3,7 +3,7 @@ import { UserService } from './user.service';
 import { UserDto } from './userDto';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Post, Body } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 @Controller('user')
 export class UserController {
@@ -25,7 +25,7 @@ export class UserController {
           password: hashedPassword,
         });
 
-        return user;
+        return {message: "Регистрация прошла успешно"};
       }
     } catch (error) {
       if (error instanceof HttpException) {

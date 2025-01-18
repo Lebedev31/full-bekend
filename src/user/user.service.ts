@@ -15,8 +15,6 @@ export class UserService {
         $or: [{ email: userDto.email }, { name: userDto.name }],
       });
 
-      console.log(examinationUser);
-
       if (!examinationUser) {
         const user = new this.userModel(userDto);
         await user.save();

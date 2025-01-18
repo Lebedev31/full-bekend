@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import { User } from '../user/user.models';
 import { LoginDto } from './dto/authDto';
 import { HttpException, HttpStatus } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { TUser } from 'type/types';
 
@@ -37,5 +37,28 @@ export class AuthService {
     return {
       access_token: this.jwtService.sign(payload),
     };
+  }
+
+  async createSocialUser(user: TUser) {
+    const examinationUser = await this.userModel.findOne({
+      $or: [{ email: user.email }, { name: user.name }],
+    });
+
+    if (examinationUser) {
+      return true;
+    }
+
+    if (!examinationUser) {
+      const socialUser = new this.userModel({
+        name: user.name,
+        email: user.email,
+        provider: user.provider,
+      });
+      await socialUser.save();
+      console.log(socialUser);
+      return true;
+    }
+
+    return false;
   }
 }
