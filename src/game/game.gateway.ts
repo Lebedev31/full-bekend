@@ -17,8 +17,6 @@ type GameRoom = {
   };
   status: 'waiting' | 'full';
 };
-
-type Player = Omit<TGameKardOnlineSession, 'player2' | 'player1'| 'arrCard' | 'discard'> & {enemy: number, player: TCard[]};
   
 @WebSocketGateway({
     cors: {
@@ -33,6 +31,7 @@ type Player = Omit<TGameKardOnlineSession, 'player2' | 'player1'| 'arrCard' | 'd
     constructor(private gameService: GameService){}
   
     @WebSocketServer()
+
     server: Server;
 
     private listOfRooms: GameRoom[] = [];
@@ -76,7 +75,6 @@ type Player = Omit<TGameKardOnlineSession, 'player2' | 'player1'| 'arrCard' | 'd
         }   
     }
 
-
     deleteRoomPlayer(id: string){
        this.listOfRooms.forEach((item, index)=> {
 
@@ -98,19 +96,36 @@ type Player = Omit<TGameKardOnlineSession, 'player2' | 'player1'| 'arrCard' | 'd
 
     private responsePlayer(data: TGameKardOnlineSession, roomName: string, idPlayer1: string, idPlayer2: string){
 
-      const setPlayerObject = (player: TCard[], num: number): Player => {
-          return {
-             idGame: data.idGame,
-             count: data.count,
-             player: player,
-             enemy: num,
-             field: data.field,
-             trumpName: data.trumpName
-          }
-      }
+        const setSequence = (player1: TCard[], player2: TCard[], trump: string)=>{  // проверяем наименьшую козырную карту и кто будет первым ходить
+            const filterPlayer1 = player1.filter((item)=> item.trump === trump);
+            const filterPlayer2 = player2.filter((item)=> item.trump === trump);
 
-        this.server.to(idPlayer1).emit('move', setPlayerObject(data.player1, data.player2.length));
-        this.server.to(idPlayer2).emit('move', setPlayerObject(data.player2, data.player1.length));
+            if(filterPlayer1.length === 0 && filterPlayer2.length === 0){ // если у обоих игроков не козяря, выбираем случайного
+              const randomNumber = Math.floor(Math.random() * 2) + 1;
+               return{
+                 player1: randomNumber === 2,
+                 player2: randomNumber === 1
+               }
+            }
+           const minTrupm1 = filterPlayer1.length > 0 ? Math.min(...filterPlayer1.map((item)=> item.defaultPower)): false;
+           const minTrupm2 = filterPlayer2.length > 0 ? Math.min(...filterPlayer2.map((item)=> item.defaultPower)): false;
+
+           return {
+             player1: minTrupm1 && (minTrupm2 ? minTrupm1 < minTrupm2: true),
+             player2: minTrupm2 && (minTrupm1 ? minTrupm2 < minTrupm1: true)
+           }
+
+        }
+
+        const sequence = setSequence(data.player1, data.player2, data.trumpName);
+
+        this.server.to(idPlayer1).emit('move', this.gameService.setPlayerObject(data.player1, data.player2.length, data, sequence.player1));
+        this.server.to(idPlayer2).emit('move', this.gameService.setPlayerObject(data.player2, data.player1.length, data, sequence.player2));
+    }
+
+    @SubscribeMessage('changeField')
+    pushField(client: Socket, payload: any){
+      console.log(payload);
     }
 
   } 

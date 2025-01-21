@@ -3,7 +3,9 @@ import { Card, GameKardOnlineSession } from './game.models';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { randomUUID } from 'crypto';
+import { TCard, TGameKardOnlineSession } from 'type/types';
 
+type Player = Omit<TGameKardOnlineSession, 'player2' | 'player1'| 'arrCard' | 'discard'> & {enemy: number, player: TCard[], sequence?: boolean };
 
 @Injectable()
 export class GameService {
@@ -25,7 +27,11 @@ export class GameService {
             if(item.suit === mast){
                 item.trump = mast;
                 item.presentStrength = item.defaultPower + 10;
+            } else {
+                item.presentStrength = item.defaultPower;
             }
+
+
             return item;
         });
 
@@ -59,4 +65,17 @@ export class GameService {
         }
        
     }
+
+    setPlayerObject(player: TCard[], num: number, data: TGameKardOnlineSession, sequence?: boolean): Player {
+        return {
+           idGame: data.idGame,
+           count: data.count,
+           player: player,
+           enemy: num,
+           field: data.field,
+           trumpName: data.trumpName,
+           sequence,
+        }
+    }
+
 }
