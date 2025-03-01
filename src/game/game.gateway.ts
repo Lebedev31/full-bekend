@@ -7,7 +7,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { GameService } from './game.service';
-import { TGameKardOnlineSession, TCard } from 'type/types';
+import { TGameKardOnlineSession, TCard, PayloadField, PayloadDefence, PayloadDiscard } from 'type/types';
 
 type GameRoom = {
   id: string;
@@ -68,10 +68,10 @@ type GameRoom = {
            this.listOfRooms[findWaitingIndex].status = 'full';
            this.listOfRooms[findWaitingIndex].players.player2 = client.id;
            client.join(this.listOfRooms[findWaitingIndex].id);
-           const deck = await this.gameService.sortCard();
-           this.responsePlayer(deck, this.listOfRooms[findWaitingIndex].id, 
-                                     this.listOfRooms[findWaitingIndex].players.player1, 
-                                     this.listOfRooms[findWaitingIndex].players.player2,)
+           const idPlayer1 = this.listOfRooms[findWaitingIndex].players.player1;
+           const idPlayer2 = this.listOfRooms[findWaitingIndex].players.player2;
+           const deck = await this.gameService.sortCard(idPlayer1, idPlayer2 );
+           this.responsePlayer(deck, this.listOfRooms[findWaitingIndex].id, idPlayer1, idPlayer2);
         }   
     }
 
@@ -92,6 +92,10 @@ type GameRoom = {
             this.listOfRooms.splice(index, 1);
           } 
        })
+    }
+
+    async deleteSession(id: string){
+       
     }
 
     private responsePlayer(data: TGameKardOnlineSession, roomName: string, idPlayer1: string, idPlayer2: string){
@@ -119,13 +123,48 @@ type GameRoom = {
 
         const sequence = setSequence(data.player1, data.player2, data.trumpName);
 
-        this.server.to(idPlayer1).emit('move', this.gameService.setPlayerObject(data.player1, data.player2.length, data, sequence.player1));
-        this.server.to(idPlayer2).emit('move', this.gameService.setPlayerObject(data.player2, data.player1.length, data, sequence.player2));
+        this.server.to(idPlayer1).emit('move', this.gameService.setPlayerObject(data.player1, data.player2.length, data, sequence.player1, idPlayer1));
+        this.server.to(idPlayer2).emit('move', this.gameService.setPlayerObject(data.player2, data.player1.length, data, sequence.player2, idPlayer2));
     }
 
     @SubscribeMessage('changeField')
-    pushField(client: Socket, payload: any){
-      console.log(payload);
+   async pushField(client: Socket, payload: PayloadField){
+    const { idCard, idGame, idPlayer } = payload;
+       const session = await this.gameService.sessionPushField(idCard, idGame, idPlayer) as TGameKardOnlineSession;
+       this.responseSession(session, 'updateField')
+      
     }
 
+    responseSession(data: TGameKardOnlineSession, event: string){
+      this.server.to(data.idPlayer1).emit(event, this.gameService.setPlayerObject(data.player1, data.player2.length, data));
+      this.server.to(data.idPlayer2).emit(event, this.gameService.setPlayerObject(data.player2, data.player1.length, data));
+    }
+
+    @SubscribeMessage('defenceField')
+    async defenceUpdateSession(client: Socket, payload: PayloadDefence ){
+      const { idCard, idGame, idPlayer, idCard2 } = payload;
+      const session = await this.gameService.defenceUpdate(idCard, idGame, idPlayer, idCard2) as TGameKardOnlineSession;
+      this.responseSession(session, 'defenceField');
+    }
+
+    @SubscribeMessage('discard')
+    async discardField(client: Socket, payload: PayloadDiscard){
+       const {idGame, idPlayer} = payload;
+       const session = await this.gameService.discardUpdate(idGame);
+       const sequence1 = session.idPlayer1 === idPlayer ? false: true;
+       const sequence2 = session.idPlayer2 === idPlayer ? false: true;
+       this.server.to(session.idPlayer1).emit('discard', this.gameService.setPlayerObject(session.player1, session.player2.length, session, sequence1));
+       this.server.to(session.idPlayer2).emit('discard', this.gameService.setPlayerObject(session.player2, session.player1.length, session, sequence2));
+    }
+
+    @SubscribeMessage('take')
+    async takeCard(client: Socket, payload: PayloadDiscard){
+      console.log(payload);
+       const {idGame, idPlayer} = payload;
+       const session = await this.gameService.takeCard(idGame, idPlayer);
+       const sequence1 = session.idPlayer1 === idPlayer ? true: false;
+       const sequence2 = session.idPlayer2 === idPlayer ? true: false;
+       this.server.to(session.idPlayer1).emit('take', this.gameService.setPlayerObject(session.player1, session.player2.length, session, sequence1));
+       this.server.to(session.idPlayer2).emit('take', this.gameService.setPlayerObject(session.player2, session.player1.length, session, sequence2));
+    }
   } 

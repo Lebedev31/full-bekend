@@ -3,7 +3,7 @@ import { Document, Types } from 'mongoose';
 import { TCard, TGameKardOnlineSession } from 'type/types';
 
 @Schema()
-export class Card extends Document<TCard>{
+export class Card extends Document{
     @Prop({ required: true}) 
     suit : string;
 
@@ -21,18 +21,30 @@ export class Card extends Document<TCard>{
 
     @Prop({ required: true}) 
     presentStrength: number;
+
+    @Prop()
+    topCard?: string;
+    // Опциональное поле beatenId — ссылка на карточку, которую эта карта побила
+    @Prop()
+    bottomCard?: string;
+
 }
 
 export const CardSchema = SchemaFactory.createForClass(Card);
 
-
 @Schema()
-export class GameKardOnlineSession extends Document<TGameKardOnlineSession>{
+export class GameKardOnlineSession extends Document{
     @Prop({ required: true}) 
     idGame: string;
 
     @Prop({ required: true}) 
     trumpName: string;
+
+    @Prop({ required: true}) 
+    idPlayer1: string;
+
+    @Prop({ required: true}) 
+    idPlayer2: string;
 
     @Prop({ required: true, type: [{
         type: Types.ObjectId, ref: 'Card'
@@ -48,7 +60,7 @@ export class GameKardOnlineSession extends Document<TGameKardOnlineSession>{
         type: Types.ObjectId, ref: 'Card'
     }]}) 
     player2: Types.Array<Card>
-
+    
     @Prop({ required: true, type: [{
         type: Types.ObjectId, ref: 'Card'
     }]}) 

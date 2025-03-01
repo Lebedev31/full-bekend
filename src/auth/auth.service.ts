@@ -16,6 +16,7 @@ export class AuthService {
   ) {}
 
   async validateLogin(loginDto: LoginDto) {
+    console.log('dddd');
     const user = (await this.userModel.findOne({
       name: loginDto.name,
     })) as TUser;
@@ -40,6 +41,7 @@ export class AuthService {
   }
 
   async createSocialUser(user: TUser) {
+    console.log(14);
     const examinationUser = await this.userModel.findOne({
       $or: [{ email: user.email }, { name: user.name }],
     });

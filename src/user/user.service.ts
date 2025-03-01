@@ -10,6 +10,7 @@ export class UserService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
   async create(userDto: UserDto) {
+    console.log(234);
     try {
       const examinationUser = await this.userModel.findOne({
         $or: [{ email: userDto.email }, { name: userDto.name }],

@@ -21,6 +21,7 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() loginDto: LoginDto, @Res() res: Response) {
+    console.log(loginDto);
     if (!loginDto.name || !loginDto.password) {
       throw new HttpException('Неверный запрос', HttpStatus.BAD_REQUEST);
     }

@@ -15,6 +15,8 @@ export type TLogin = {
 export type TGameKardOnlineSession = {
   // сессия игры
   idGame: string;
+  idPlayer1: string;
+  idPlayer2: string;
   trumpName: string;
   arrCard: TCard[];
   player1: TCard[];
@@ -32,4 +34,16 @@ export type TCard = {
   defaultPower: number;
   trump: string;
   presentStrength: number;
+  topCard?: string;
+  bottomCard?: string;
 };
+
+
+export type PayloadField = {  // тип приходящий с клиента для обновления сессии
+  idCard: string;
+  idGame: string;
+  idPlayer: string;
+}
+
+export type PayloadDefence = PayloadField & {idCard2: string}
+export type PayloadDiscard = {idGame: string, idPlayer: string}
